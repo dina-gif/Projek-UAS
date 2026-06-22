@@ -1,0 +1,108 @@
+-- Database schema for Sistem Informasi Fisioterapi
+-- Gunakan MySQL / MariaDB
+
+CREATE DATABASE IF NOT EXISTS fisioterapi CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
+USE fisioterapi;
+
+CREATE TABLE IF NOT EXISTS users (
+  id INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+  nama VARCHAR(255) NOT NULL,
+  email VARCHAR(255) NOT NULL UNIQUE,
+  password VARCHAR(255) NOT NULL,
+  role ENUM('Admin','Terapis','Pasien') NOT NULL DEFAULT 'Pasien',
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+CREATE TABLE IF NOT EXISTS pasien (
+  id_pasien INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+  user_id INT UNSIGNED NOT NULL,
+  nama VARCHAR(255) NOT NULL,
+  jenis_kelamin ENUM('Laki-laki','Perempuan') NOT NULL,
+  tanggal_lahir DATE,
+  alamat TEXT,
+  telepon VARCHAR(32),
+  FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+CREATE TABLE IF NOT EXISTS terapis (
+  id_terapis INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+  nama VARCHAR(255) NOT NULL,
+  spesialis VARCHAR(255) DEFAULT NULL,
+  telepon VARCHAR(32),
+  foto VARCHAR(255) DEFAULT NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+CREATE TABLE IF NOT EXISTS layanan (
+  id_layanan INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+  nama_layanan VARCHAR(255) NOT NULL,
+  deskripsi TEXT,
+  harga DECIMAL(12,2) NOT NULL DEFAULT 0,
+  durasi VARCHAR(64) DEFAULT NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+CREATE TABLE IF NOT EXISTS jadwal (
+  id_jadwal INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+  terapis_id INT UNSIGNED NOT NULL,
+  tanggal DATE NOT NULL,
+  jam_mulai TIME NOT NULL,
+  jam_selesai TIME NOT NULL,
+  status ENUM('Tersedia','Terisi','Tidak Tersedia') NOT NULL DEFAULT 'Tersedia',
+  FOREIGN KEY (terapis_id) REFERENCES terapis(id_terapis) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+CREATE TABLE IF NOT EXISTS reservasi (
+  id_reservasi INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+  pasien_id INT UNSIGNED NOT NULL,
+  terapis_id INT UNSIGNED NOT NULL,
+  layanan_id INT UNSIGNED NOT NULL,
+  jadwal_id INT UNSIGNED NOT NULL,
+  keluhan TEXT,
+  status ENUM('Menunggu','Dikonfirmasi','Selesai','Batal') NOT NULL DEFAULT 'Menunggu',
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  FOREIGN KEY (pasien_id) REFERENCES pasien(id_pasien) ON DELETE CASCADE,
+  FOREIGN KEY (terapis_id) REFERENCES terapis(id_terapis) ON DELETE CASCADE,
+  FOREIGN KEY (layanan_id) REFERENCES layanan(id_layanan) ON DELETE CASCADE,
+  FOREIGN KEY (jadwal_id) REFERENCES jadwal(id_jadwal) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+CREATE TABLE IF NOT EXISTS hasil_terapi (
+  id_hasil INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+  reservasi_id INT UNSIGNED NOT NULL,
+  diagnosa TEXT,
+  catatan TEXT,
+  rekomendasi TEXT,
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  FOREIGN KEY (reservasi_id) REFERENCES reservasi(id_reservasi) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+CREATE TABLE IF NOT EXISTS pembayaran (
+  id_pembayaran INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+  reservasi_id INT UNSIGNED NOT NULL,
+  order_id VARCHAR(255),
+  metode VARCHAR(100),
+  jumlah DECIMAL(12,2) NOT NULL DEFAULT 0,
+  status ENUM('Pending','Lunas','Gagal','Dibatalkan') NOT NULL DEFAULT 'Pending',
+  tanggal TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  transaction_id VARCHAR(255) DEFAULT NULL,
+  raw_notification LONGTEXT DEFAULT NULL,
+  FOREIGN KEY (reservasi_id) REFERENCES reservasi(id_reservasi) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+CREATE TABLE IF NOT EXISTS artikel (
+  id_artikel INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+  judul VARCHAR(255) NOT NULL,
+  isi TEXT NOT NULL,
+  gambar VARCHAR(255) DEFAULT NULL,
+  tanggal DATE DEFAULT CURRENT_DATE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+-- Password reset tokens
+CREATE TABLE IF NOT EXISTS password_resets (
+  id INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+  email VARCHAR(255) NOT NULL,
+  token VARCHAR(255) NOT NULL,
+  expires_at DATETIME NOT NULL,
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  INDEX (email),
+  INDEX (token)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
